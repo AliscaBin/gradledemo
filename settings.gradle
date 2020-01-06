@@ -1,0 +1,43 @@
+rootProject.name = 'gradledemo'
+include ':firstdemo',':seconddemo',':thirddemo'
+
+if (hasProperty('isLoadTest') ? isLoadTest.toBoolean() : false) {
+    include ':Test'
+}
+
+
+println '初始化阶段开始...'
+//gradle执行流程
+
+/**
+ * initialization初始化阶段
+ *      解析整个工程中所有的Project,构建所有的Project对应的project对象
+ * configuration配置阶段
+ *      解析所有的project对象中的task,构建所有task的拓扑图
+ * executor执行阶段
+ *      执行具体的task及其依赖的task
+ *
+ */
+
+
+/**
+ * project相关API
+ *
+ * task相关API
+ *
+ * 属性相关API
+ *
+ * file相关API
+ *
+ * gradle生命周期相关API
+ *
+ * 其他API
+ *
+ *
+ *
+ */
+include 'firstdemo'
+include 'seconddemo'
+include 'thirddemo'
+include 'Test'
+

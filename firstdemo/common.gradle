@@ -1,0 +1,8 @@
+ext {
+    selfinfo = [
+            adminname : 'wangbin',
+            age : 18,
+            score : 100
+    ]
+
+}

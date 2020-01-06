@@ -1,0 +1,523 @@
+import groovy.xml.MarkupBuilder
+
+
+plugins {
+    id 'java'
+}
+
+group 'com.wangbin'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+
+/**
+ * initialization初始化阶段
+ *      解析整个工程中所有的Project,构建所有的Project对应的project对象
+ * configuration配置阶段
+ *      解析所有的project对象中的task,构建所有task的拓扑图
+ * executor执行阶段
+ *      执行具体的task及其依赖的task
+ *
+ */
+
+//配置阶段开始前的监听回调
+this.beforeEvaluate {
+    println '配置阶段开始'
+}
+
+//配置阶段完成以后的回调
+this.afterEvaluate {
+    println '配置阶段完毕'
+}
+
+//gradle执行完毕后的回调监听
+this.gradle.buildFinished {
+    println 'gradle构建完毕'
+}
+
+this.gradle.beforeProject {}
+
+this.gradle.afterProject {}
+
+
+/**
+ * project相关API
+ * */
+println this.getAllprojects()
+//this.getParentProject()
+
+//输出所有project的名字
+def getProjects() {
+    println '--------------------'
+    println 'Root Project'
+    println '--------------------'
+    this.getAllprojects().eachWithIndex { Project project, int index ->
+        if (index == 0) {
+            println "Root project :${project.name}"
+        } else {
+            println "+--- project :${project.name}"
+        }
+    }
+    //获取所有子project
+    println '--------------------'
+    println 'Sub Project'
+    println '--------------------'
+    this.getSubprojects().eachWithIndex { Project project, int index ->
+//        if (index == 0) {
+//            println "Root project :${project.name}"
+//        } else {
+        println "+--- project :${project.name}"
+//        }
+    }
+}
+
+
+//获取父project  有异常，当前为根project，获取父project为null
+def getParentProject() {
+    def name = this.getParent().name
+    println "the parent project name is: ${name}"
+}
+
+this.getRootPro()
+//获取根project的名字
+def getRootPro() {
+    def name = this.getRootProject().name
+    println "the root project name is : ${name}"
+}
+
+//project API练习
+//从根项目中配置各子模块的相关配置<一般不建议>
+project('firstdemo') { Project project ->
+    println "project_API----" + project.getName()
+    //配置firstdemo相关的属性
+}
+
+//配置所有工程需要的配置项
+allprojects {
+    println "allprojects 配置所有项目共有的属性"
+}
+//allprojects 配置所有项目共有的属性
+//allprojects 配置所有项目共有的属性
+//allprojects 配置所有项目共有的属性
+//allprojects 配置所有项目共有的属性
+
+//配置所有子工程需要的配置项
+subprojects {
+    println "subprojects 配置所有子工程共有的属性"
+}
+//subprojects 配置所有子工程共有的属性
+//subprojects 配置所有子工程共有的属性
+//subprojects 配置所有子工程共有的属性
+
+
+/**
+ * 属性相关API
+ * */
+//查看相关属性查看project类源码
+//def fields = "fields"
+//println fields
+//configuration
+ext {
+    fields = 'fields'
+}
+//usage
+println this.rootProject.fields
+
+//可以通过subprojects()方法通过ext{}给所有子工程添加所需的属性
+//推荐所需的属性定义在根工程中，通过| this.rootProject.fields<属性名>来获取想要的属性值
+//                               | this.fields<属性名>  属性的继承
+apply from: this.file('common.gradle')
+println this.selfinfo.adminname
+println this.selfinfo.age
+println this.selfinfo.score
+//子模块中这样引用
+println this.selfinfo.age
+println rootProject.ext.selfinfo.age
+
+/*扩张属性的第二种定义方式*/
+//将属性以键值对的形式定义在gradle.properties文件中
+/**
+ * file相关API
+ * */
+println '文件路径相关API'
+/*路径获取相关api*/
+println "the root file path is " + getRootDir().absolutePath
+println "the build file path is " + getBuildDir().absolutePath
+println "the project file path is " + getProjectDir().absolutePath
+/*文件操作相关api*/
+//文件定位
+println getContent('common.gradle')
+
+def getContent(String path) {
+    try {
+        def file = file(path)//相对于当前路径进行查找相应的文件
+        return file.text
+    } catch (GradleException ex) {
+        println 'file no found...'
+    }
+    return null
+}
+//文件拷贝
+//将根工程下的common.gradle拷贝到firstdemo工程下
+//copy {
+//    from file('common.gradle')
+//    into project('firstdemo').getProjectDir()
+////    exclude  //对不必要的文件进行排除
+//}
+//文件夹拷贝同上
+
+//文件树遍历
+fileTree('build/outputs') { FileTree fileTree ->
+    fileTree.visit { FileTreeElement element ->
+        println "the file name is : ${element.file.name}"
+        //copy delete etc.
+    }
+}
+
+/**
+ * task相关API
+ * */
+/*
+执行gradlew tasks
+------------------------------------------------------------
+Tasks runnable from root project
+------------------------------------------------------------
+
+Build tasks
+-----------
+assemble - Assembles the outputs of this project.
+build - Assembles and tests this project.
+buildDependents - Assembles and tests this project and all projects that depend on it.
+buildNeeded - Assembles and tests this project and all projects it depends on.
+classes - Assembles main classes.
+clean - Deletes the build directory.
+jar - Assembles a jar archive containing the main classes.
+testClasses - Assembles test classes.
+
+Build Setup tasks
+-----------------
+init - Initializes a new Gradle build.
+wrapper - Generates Gradle wrapper files.
+
+Documentation tasks
+-------------------
+javadoc - Generates Javadoc API documentation for the main source code.
+
+Help tasks
+----------
+buildEnvironment - Displays all buildscript dependencies declared in root project 'gradledemo'.
+components - Displays the components produced by root project 'gradledemo'. [incubating]
+dependencies - Displays all dependencies declared in root project 'gradledemo'.
+dependencyInsight - Displays the insight into a specific dependency in root project 'gradledemo'.
+dependentComponents - Displays the dependent components of components in root project 'gradledemo'. [incubating]
+help - Displays a help message.
+model - Displays the configuration model of root project 'gradledemo'. [incubating]
+projects - Displays the sub-projects of root project 'gradledemo'.
+properties - Displays the properties of root project 'gradledemo'.
+tasks - Displays the tasks runnable from root project 'gradledemo' (some of the displayed tasks may belong to subprojects).
+
+Verification tasks
+------------------
+check - Runs all checks.
+test - Runs the unit tests.*/
+
+//task定义及配置
+/*通过task函数创建*/
+task helloTask {
+    println 'I am helloTask'
+}
+/*使用TaskContainer容器创建*/
+this.tasks.create(name: 'helloTask2') {
+    setGroup("wangbin")
+    setDescription('helloTask2 description')
+    println 'I am helloTask2'
+}
+/*给task分组进行管理*/
+task helloTask3(group: 'wangbin', description: 'task define') {
+    println 'I am helloTask3, with group and description'
+    doFirst {
+        println 'the task group is :' + group
+    }
+    doLast {
+        println 'the task name is :' + name
+    }
+}
+helloTask3.doFirst {
+    println 'the task description is :' + description
+}
+/*
+> Task :helloTask3
+the task description is :task define
+the task group is :wangbin
+the task name is :helloTask3
+*/
+//task执行详解
+/*一般task都会在配置阶段进行执行，可以通过配置使得task只有在执行阶段执行 见helloTask3*/
+
+/*计算build执行时间的task*/
+def startBuildTime = 0, endBuildTime = 0
+this.afterEvaluate { Project project ->
+    //保证Task已经配置完毕
+//    def preBuildTask = project.tasks.getByName('preBuild')
+    /*
+    上面出现异常了，没有preBuild这个task
+    A problem occurred configuring root project 'gradledemo'.
+    > Task with name 'preBuild' not found in root project 'gradledemo'.
+    */
+//    preBuildTask.doFirst {
+//        startBuildTime = System.currentTimeMillis()
+//        println 'the start time is :' + startBuildTime
+//    }
+    def buildTask = project.tasks.getByName('build')
+    buildTask.doLast {
+        //给build task 追加功能
+        endBuildTime = System.currentTimeMillis()
+        println 'the end time is :' + endBuildTime
+        println "the build task execute time is :${endBuildTime - startBuildTime} s"
+    }
+}
+//task的依赖和执行顺序
+task taskX {
+    doLast {
+        println 'taskX'
+    }
+}
+task taskY {
+    doLast {
+        println 'taskY'
+    }
+}
+task taskZ(dependsOn: [taskX, taskY]) {
+    doLast {
+        println 'taskZ'
+    }
+}
+/*执行taskZ
+> Task :taskX
+taskX
+
+> Task :taskY
+taskY
+
+> Task :taskZ
+taskZ
+*/
+//dependsOn强依赖方式
+//task taskZ(dependsOn: [taskX,taskY]) {
+//    doLast {
+//        println 'taskZ'
+//    }
+//}
+
+task lib1 {
+    doLast {
+        println 'lib1'
+    }
+}
+task lib2 {
+    doLast {
+        println 'lib2'
+    }
+}
+task nolib {
+    doLast {
+        println 'nolib'
+    }
+}
+//指定task testlib依赖所有lib开头的额task
+task testlib {
+    dependsOn this.tasks.findAll { task ->
+        task.getName().startsWith("lib")
+    }
+    doLast {
+        println 'testlib'
+    }
+}
+/*执行 task testlib
+> Task :lib1
+lib1
+
+> Task :lib2
+lib2
+
+> Task :testlib
+testlib*/
+
+//挂接到构建生命周期
+//task实战<版本维护>
+task handleReleaseFile {
+    def srcFile = file('releases.xml')
+    def destDir = new File(this.buildDir.path,'generated/release/')
+    doLast {
+        println '开始解析对应的xml文件'
+        destDir.mkdirs()
+        def releases = new XmlParser().parseText(srcFile.getText("utf-8"))
+        releases.release.each { releaseNode ->
+            def name = releaseNode.versionName.text()
+            def version = releaseNode.versionCode.text()
+            def info = releaseNode.versionInfo.text()
+            //创建文件，幷写入节点数据
+            def destFile = new File(destDir,"release-${name}.txt")
+            destFile.withWriter {writer ->
+//                def line = new String("${version} -> ${name} -> ${info}".getBytes("utf-8"))
+                writer.write("${version} -> ${name} -> ${info}".toString())
+            }
+        }
+    }
+}
+task handleReleaseFileTest (dependsOn: handleReleaseFile) {
+    def dir = fileTree(this.buildDir.path+'/generated/release/')
+    def destFile = new File(this.buildDir.path+'/generated/release/')
+    doLast {
+        //两种方法遍历文件夹
+        destFile.eachFileRecurse{file ->
+            println "the filename is : ${file.name}"
+        }
+        dir.each { file ->
+            println "this file name is :" + file.name
+        }
+        println '解析xml完成'
+    }
+}
+//指定Task输入输出:
+ext {
+    versionName = '2.0.0'
+    versionCode = '200'
+    versionInfo = 'App的第二个版本，上线了一些有趣的游戏'
+    destFile = file('releases.xml')
+    if (destFile != null && !destFile.exists()){
+        destFile.createNewFile()
+    }
+}
+
+task writeTask {
+    //为task指定输入
+    inputs.property("versionName",versionName)
+    inputs.property("versionCode",versionCode)
+    inputs.property("versionInfo",versionInfo)
+    //为task指定输出
+    outputs.file this.destFile
+
+    //task执行逻辑
+    doLast {
+        println "writeTask生成xml文件开始"
+        def data = inputs.getProperties()
+        File file = outputs.getFiles().getSingleFile()
+        //将data转化为XML格式
+        def sw = new StringWriter()
+        def xmlBuilder = new MarkupBuilder(sw)
+        if (file.text != null && file.size() <= 0) {
+            //文件中没有内容
+            xmlBuilder.releases{
+                release {
+                    versionCode(data.versionCode)
+                    versionName(data.versionName)
+                    versionInfo(data.versionInfo)
+                }
+            }
+            file.withWriter {writer ->
+                writer.append(sw.toString())
+            }
+        }else {
+            println "writeTask 发现文件存在，追加内容开始"
+            xmlBuilder.release {
+                versionCode(data.versionCode)
+                versionName(data.versionName)
+                versionInfo(data.versionInfo)
+            }
+            def lines = file.readLines()
+            def length = lines.size() - 1
+            file.withWriter {writer ->
+                lines.eachWithIndex{ String line, int index ->
+                    if (index != length){
+                        writer.append(line + System.lineSeparator())
+                    }else{
+                        writer.append(sw.toString() + System.lineSeparator())
+                        writer.append(line)
+                    }
+                }
+            }
+        }
+    }
+}
+
+task readTask {
+    inputs.file this.destFile
+    doLast {
+        println "readTask读取xml文件开始"
+        def file = inputs.files.getSingleFile()
+        println "readTask输出内容："+ file.text
+    }
+}
+
+task wrTest {
+    dependsOn readTask, writeTask
+    doLast {
+        println "输入输出文件结束"
+    }
+}
+/**
+ * gradle生命周期相关API
+ * */
+
+/**
+ * 其他API
+ * */
+//依赖相关API
+//buildscript {ScriptHandler scriptHandler ->
+////    配置工程的仓库地址
+//    scriptHandler.repositories { RepositoryHandler repositoryHandler ->
+//      //可配置的仓库如下：
+//        repositoryHandler.jcenter()
+//        repositoryHandler.mavenCentral()
+//        repositoryHandler.mavenLocal()
+//        repositoryHandler.maven {MavenArtifactRepository mavenArtifactRepository ->
+//            mavenArtifactRepository.name()
+//            mavenArtifactRepository.url()
+//            credentials {
+//                username = 'admin'
+//                password = 'admin'
+//            }
+//        }
+//        repositoryHandler.ivy {}
+//    }
+//    //配置工程的‘插件’依赖地址//gradle使用的插件 区别于工程所用的依赖
+//    scriptHandler.dependencies {
+//
+//    }
+//}
+
+//为应用程序添加第三方库依赖
+//dependencies {
+//    compile fileTree(include: ['*.jar'],dir: 'libs')  //依赖本地jar包
+//    compile project(rootProject.ext.dependence.firstdemo) //依赖本地源码工程
+//    compile (group: 'mysql', name: 'mysql-connector-java', version: '5.1.46'){ //引入第三方库
+//        exclude()//依赖排除
+//        transitive false //依赖传递性
+//        }
+//    provided (group: 'mysql', name: 'mysql-connector-java', version: '5.1.46')  //编译阶段起作用
+//}
+
+//外部命令相关API
+//exec {
+//    try {
+//        executable 'gitbash'
+//        args '-c', 'ls -l'
+//        println 'the command is execute success'
+//    }catch(GradleException ex){
+//        println 'the command is execute failed.'
+//    }
+//}
+
+
+
+

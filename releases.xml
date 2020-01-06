@@ -1,0 +1,12 @@
+<releases>
+  <release>
+    <versionCode>100</versionCode>
+    <versionName>1.0.0</versionName>
+    <versionInfo>App???????汾?????????Щ????????????</versionInfo>
+  </release>
+<release>
+  <versionCode>200</versionCode>
+  <versionName>2.0.0</versionName>
+  <versionInfo>App的第二个版本，上线了一些有趣的游戏</versionInfo>
+</release>
+</releases>

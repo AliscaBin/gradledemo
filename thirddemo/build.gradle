@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+}
+
+group 'com.wangbin'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+this.getParentProject()
+//获取父project
+def getParentProject() {
+    def name = this.getParent().name
+    println "the parent project name is: ${name}"
+}
